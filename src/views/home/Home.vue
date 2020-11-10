@@ -3,22 +3,20 @@
     <nav-bar class="home-nav">
       <div slot="center">购物街</div>
     </nav-bar>
-    <home-swiper :banners="banners"></home-swiper>
-    <home-recommend-view :recommends="recommends"></home-recommend-view>
-    <feature-view></feature-view>
+
+    <home-swiper :banners="banners" />
+
+    <home-recommend-view :recommends="recommends" />
+
+    <feature-view />
+
     <tab-control
       class="tab-control"
       :titles="['流行', '新款', '精选']"
-    ></tab-control>
-    <ul>
-      <li>ff</li>
-      <li>ff</li>
-      <li>ff</li>
-      <li>ff</li>
-      <li>ff</li>
-      <li>ff</li>
-      <li>ff</li>
-    </ul>
+      @tabClick="tabClick"
+    />
+
+    <good-list :goods="showGoods" />
   </div>
 </template>
 
@@ -28,8 +26,9 @@ import HomeSwiper from "./childComps/HomeSwiper";
 import HomeRecommendView from "./childComps/HomeRecommendView";
 import FeatureView from "./childComps/FeatureView";
 import TabControl from "components/content/tabControl/TabControl";
+import GoodList from "components/content/goods/GoodsList";
 
-import { getHomeMultidata } from "network/home";
+import { getHomeMultidata, getHomeGoods } from "network/home";
 
 export default {
   name: "Home",
@@ -38,20 +37,75 @@ export default {
     HomeSwiper,
     HomeRecommendView,
     FeatureView,
-    TabControl
+    TabControl,
+    GoodList
   },
   data() {
     return {
       banners: [],
-      recommends: []
+      recommends: [],
+      goods: {
+        pop: { page: 0, list: [] },
+        new: { page: 0, list: [] },
+        sell: { page: 0, list: [] }
+      },
+      currentType: "pop"
     };
+  },
+  computed: {
+    showGoods() {
+      return this.goods[this.currentType].list;
+    }
   },
   created() {
     // 1.请求多个数据
-    getHomeMultidata().then(res => {
-      this.banners = res.data.banner.list;
-      this.recommends = res.data.recommend.list;
-    });
+    this.getHomeMultidataPackage();
+    // 2.请求商品数据
+    this.getHomeGoodsPackage("pop");
+    this.getHomeGoodsPackage("new");
+    this.getHomeGoodsPackage("sell");
+  },
+  methods: {
+    /**
+     * 事件监听相关方法
+     */
+    tabClick(index) {
+      switch (index) {
+        case 0:
+          this.currentType = "pop";
+          break;
+        case 1:
+          this.currentType = "new";
+          break;
+        case 2:
+          this.currentType = "sell";
+          break;
+      }
+    },
+
+    /**
+     * 网络请求相关方法
+     */
+    getHomeMultidataPackage() {
+      getHomeMultidata().then(res => {
+        this.banners = res.data.banner.list;
+        this.recommends = res.data.recommend.list;
+      });
+    },
+    getHomeGoodsPackage(type) {
+      let page = this.goods[type].page + 1;
+      getHomeGoods(type, page).then(res => {
+        // 通过for循环方式将请求过来的数组数据追加到定义的数组中存储
+        // for (let arr in res.data.list) {
+        //   this.goods[type].list.push(arr);
+        // }
+
+        // 将数组解构，再将当前数组中的值追加到定义的数组中
+        this.goods[type].list.push(...res.data.list);
+        // 将页码加一
+        this.goods[type].page += 1;
+      });
+    }
   }
 };
 </script>
@@ -75,5 +129,6 @@ export default {
 .tab-control {
   position: sticky;
   top: 44px;
+  z-index: 9;
 }
 </style>
