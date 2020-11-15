@@ -60,7 +60,7 @@ export default {
     },
     // 重新刷新高度
     refresh() {
-      console.log("重新刷新高度");
+      // console.log("重新刷新高度");
       this.scroll && this.scroll.refresh();
     }
   }
